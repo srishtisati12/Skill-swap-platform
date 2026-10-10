@@ -10,17 +10,20 @@ import {
 import { UserSkillsService } from './user-skills.service';
 import { AddUserSkillDto } from './dto/add-user-skill.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-@UseGuards(JwtAuthGuard)
+import { ApiBearerAuth } from '@nestjs/swagger';
+
 @Controller('users/me/skills')
 export class UserSkillsController {
   constructor(private readonly userSkillsService: UserSkillsService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   addSkill(@Req() req: any, @Body() dto: AddUserSkillDto) {
     return this.userSkillsService.addSkill(req.user.sub, dto);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   removeSkill(@Req() req: any, @Param('id') id: string) {
     return this.userSkillsService.removeSkill(req.user.sub, id);
   }

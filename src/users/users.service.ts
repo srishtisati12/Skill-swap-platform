@@ -44,11 +44,13 @@ export class UsersService {
   }
 
   async findUserByEmail(email: string) {
-    return this.userModel.findOne({ email });
+    return this.userModel.findOne({ email }).select('+passwordHash');
   }
 
   async findUserById(id: string) {
     const user = await this.userModel.findOne({ id });
+    
+    
 
     if (!user) {
       throw new NotFoundException('User Not Found');
@@ -70,4 +72,84 @@ export class UsersService {
 
     return user;
   }
+  
+async getUsers(currentUserId: string) {
+  return this.userModel.aggregate([
+    {
+      $match: { id: { $ne: currentUserId }}},
+    {
+      $lookup: {
+        from: 'userskills',
+        localField: 'id',
+        foreignField: 'userId',
+        as: 'userSkills'
+      }
+    },
+    {$unwind: '$userSkills' },
+    {
+      $addFields: {
+        'userSkills.skillObjectId': {
+          $convert: {
+            input: '$userSkills.skillId',
+            to: 'objectId',
+            onError: null,
+            onNull: null
+          }
+        }
+      }
+    },
+    {
+      $lookup: {
+        from: 'skills',
+        localField: 'userSkills.skillObjectId',
+        foreignField: '_id',
+        as: 'skill'
+      }
+    },
+    { $unwind:  '$skill'},
+    {
+      $group: {
+        _id: '$id',
+        name: { $first: '$name' },
+        bio: { $first: '$bio' },
+        location: { $first: '$location' },
+        profileImage: { $first: '$profileImage' },
+        teachSkills: {
+          $addToSet: {
+            $cond: [
+              { $eq: ['$userSkills.type', 'TEACH'] },
+              '$skill.name',
+              null
+            ]
+          }
+        },
+        learnSkills: {
+          $addToSet: {
+            $cond: [
+              { $eq: ['$userSkills.type', 'LEARN'] },
+              '$skill.name',
+              null
+            ]
+          }
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        name: 1,
+        bio: 1,
+        location: 1,
+        profileImage: 1,
+        teachSkills: {
+          $setDifference: ['$teachSkills', [null]]
+        },
+        learnSkills: {
+          $setDifference: ['$learnSkills', [null]]
+        }
+      }
+    }
+  ]);
+}
+
 }
