@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Patch,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -31,4 +32,9 @@ export class UsersController {
       data,
     );
   }
+  @Get()
+getUsers(@Req() request: any) {
+  return this.usersService.getUsers(request.user.sub);
+}
+ 
 }

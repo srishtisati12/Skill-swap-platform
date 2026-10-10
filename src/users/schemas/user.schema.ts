@@ -14,7 +14,7 @@ export class User {
   @Prop()
   phone?: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true , select:false})
   passwordHash: string;
 
   @Prop()
